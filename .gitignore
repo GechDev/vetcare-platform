@@ -1,0 +1,20 @@
+# Environment / secrets
+repo/.env
+repo/backend/.env
+repo/frontend/.env
+
+# Local agent/tooling exports (never publish)
+/session/
+/sessions/
+/session.json
+/metadata.json
+config.bat
+temp_auto_push.bat
+temp_interactive_push.bat
+node_modules
+
+# OS noise
+**/.DS_Store
+
+# Generated test harness output (run locally; not published)
+repo/test_reports/
