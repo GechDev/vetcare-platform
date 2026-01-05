@@ -1,0 +1,13 @@
+{
+  "name": "vetops-orchestration",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "bootstrap": "node ./scripts/bootstrap.mjs",
+    "up": "docker compose up -d --build",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f --tail=200",
+    "ps": "docker compose ps",
+    "rebuild": "docker compose build --no-cache"
+  }
+}

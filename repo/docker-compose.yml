@@ -1,0 +1,87 @@
+name: vetops
+
+services:
+  db:
+    image: ${MYSQL_IMAGE:-mysql:8.4}
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-vetops}
+      MYSQL_USER: ${MYSQL_USER:-vetops}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-vetops_local_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-vetops_root_local_password}
+      TZ: ${TZ:-UTC}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    expose:
+      - "3306"
+    volumes:
+      - vetops_db_data:/var/lib/mysql
+    networks:
+      - vetops_internal
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        REGISTRY_PREFIX: ${DOCKER_IMAGE_REGISTRY_PREFIX:-}
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      APP_KEY: ${APP_KEY:-}
+      LOG_CHANNEL: ${LOG_CHANNEL:-stack}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      APP_LOCALE: en
+      APP_FALLBACK_LOCALE: en
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE:-vetops}
+      DB_USERNAME: ${MYSQL_USER:-vetops}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-vetops_local_password}
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: database
+      FILESYSTEM_DISK: local
+      FRONTEND_ALLOWED_ORIGINS: ${FRONTEND_ALLOWED_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      RUN_SEEDERS: ${RUN_SEEDERS:-false}
+      WARMUP_CACHE: ${WARMUP_CACHE:-true}
+      WAIT_FOR_DB: ${WAIT_FOR_DB:-true}
+      DB_WAIT_MAX_ATTEMPTS: ${DB_WAIT_MAX_ATTEMPTS:-60}
+      TZ: ${TZ:-UTC}
+    expose:
+      - "8000"
+    volumes:
+      - vetops_backend_storage:/var/www/storage
+      - vetops_backend_bootstrap_cache:/var/www/bootstrap/cache
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - vetops_internal
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/api/v1/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+
+networks:
+  vetops_edge:
+    driver: bridge
+  vetops_internal:
+    driver: bridge
+    internal: true
+
+volumes:
+  vetops_db_data:
+  vetops_backend_storage:
+  vetops_backend_bootstrap_cache:
