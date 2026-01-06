@@ -4,6 +4,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Route;
 
+Route::prefix('auth')->group(function () {
+    Route::get('/csrf-token', function (Request $request) {
+        return response()->json([
+            'csrf_token' => $request->session()->token(),
+            'request_id' => $request->header('X-Request-Id') ?: (string) Str::uuid(),
+        ]);
+    });
+});
+
 Route::get('/health', function (Request $request) {
     return response()->json([
         'data' => [
