@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,15 @@ Route::prefix('auth')->group(function () {
             'csrf_token' => $request->session()->token(),
             'request_id' => $request->header('X-Request-Id') ?: (string) Str::uuid(),
         ]);
+    });
+
+    Route::post('/login', [AuthController::class, 'login'])->middleware('cookie.csrf');
+
+    Route::middleware('auth.api')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout'])->middleware('cookie.csrf');
+        Route::get('/me', [AuthController::class, 'me'])->middleware('permission:auth.me.read');
+        Route::post('/password/change', [AuthController::class, 'changePassword'])
+            ->middleware(['cookie.csrf', 'permission:auth.password.change']);
     });
 });
 
