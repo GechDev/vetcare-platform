@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\RentalsController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
@@ -25,6 +26,14 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::middleware(['auth.api', 'audit.mutations'])->group(function () {
+    Route::prefix('master')->group(function () {
+        Route::get('/{entity}', [MasterDataController::class, 'index'])->middleware('permission:master.read');
+        Route::post('/{entity}', [MasterDataController::class, 'store'])->middleware('permission:master.write');
+        Route::patch('/{entity}/{id}', [MasterDataController::class, 'update'])->middleware('permission:master.write');
+        Route::get('/{entity}/{id}/versions', [MasterDataController::class, 'versions'])->middleware('permission:master.read');
+        Route::post('/{entity}/{id}/revert', [MasterDataController::class, 'revert'])->middleware('permission:master.revert');
+    });
+
     Route::prefix('rentals')->group(function () {
         Route::get('/assets', [RentalsController::class, 'listAssets'])->middleware('permission:rentals.read');
         Route::post('/assets', [RentalsController::class, 'createAsset'])->middleware('permission:rentals.write');
