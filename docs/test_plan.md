@@ -1,4 +1,4 @@
-# VetOps test plan (3.3.4 harness)
+# VetCare test plan (3.3.4 harness)
 
 ## Purpose
 

@@ -1,4 +1,4 @@
-# VetOps Unified Operations Portal - API Specification
+# VetCare Unified Operations Portal - API Specification
 
 ## 1) Scope
 This document defines the LAN-only REST API exposed by Laravel for the Vue.js client. It covers authentication, RBAC, master data, rental assets, inventory/stock ledger, content publishing, patient visit reviews, import/export, deduplication, dashboards, and auditing.

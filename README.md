@@ -1,6 +1,6 @@
-# VetOps Dockerized Fullstack
+# VetCare Dockerized Fullstack
 
-VetOps runs as a LAN-first on-prem stack using Docker Compose.
+VetCare runs as a LAN-first on-prem stack using Docker Compose.
 
 - `backend/` - Laravel API (`/api/v1`)
 - `frontend/` - Vue 3 + Vite app built and served by Nginx
@@ -66,9 +66,9 @@ API from Vite is proxied to `backend:8000` as `/api/v1`.
 - `backend` listens on internal network port `8000` (healthchecked).
 - `db` uses internal-only port `5432` (healthchecked).
 - Named volumes:
-  - `vetops_db_data` - PostgreSQL data
-  - `vetops_backend_storage` - Laravel storage (uploads/logs/cache)
-  - `vetops_backend_bootstrap_cache` - Laravel bootstrap cache
+  - `vetcare_db_data` - PostgreSQL data
+  - `vetcare_backend_storage` - Laravel storage (uploads/logs/cache)
+  - `vetcare_backend_bootstrap_cache` - Laravel bootstrap cache
 
 ## Operations commands
 
@@ -92,7 +92,7 @@ After startup:
 4. Login endpoint responds through proxy:
    - `POST http://localhost:8080/api/v1/auth/login`
 5. Migrations completed in backend logs.
-6. `storage/` is writable and persisted in `vetops_backend_storage` volume.
+6. `storage/` is writable and persisted in `vetcare_backend_storage` volume.
 
 Optional writable check:
 
@@ -133,8 +133,8 @@ docker compose exec backend sh -lc "mkdir -p storage/app/public && echo ok > sto
 
 ### Backup
 
-- PostgreSQL volume: `vetops_db_data`
-- Upload/storage volume: `vetops_backend_storage`
+- PostgreSQL volume: `vetcare_db_data`
+- Upload/storage volume: `vetcare_backend_storage`
 
 Recommended cadence:
 
@@ -145,10 +145,10 @@ Recommended cadence:
 ### Restore
 
 1. Stop stack: `npm run down`.
-2. Restore `vetops_db_data` and `vetops_backend_storage` from backup media.
+2. Restore `vetcare_db_data` and `vetcare_backend_storage` from backup media.
 3. Start stack: `npm run up`.
 4. Run integrity check:
-   - `docker compose exec backend php artisan vetops:integrity:check-uploads`
+   - `docker compose exec backend php artisan vetcare:integrity:check-uploads`
 5. Verify health and critical flows through frontend proxy.
 
 ## Acceptance testing (standard 3.3.4)

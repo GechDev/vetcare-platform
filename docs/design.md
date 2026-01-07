@@ -1,7 +1,7 @@
-# VetOps Unified Operations Portal - System Design
+# VetCare Unified Operations Portal - System Design
 
 ## 1) Product Intent
-VetOps is an on-premise operations platform for a multi-location veterinary hospital group. It unifies equipment rental operations, medical-supply inventory, internal content publishing, and post-visit service feedback under a single role-based Vue.js interface backed by Laravel + MySQL.
+VetCare is an on-premise operations platform for a multi-location veterinary hospital group. It unifies equipment rental operations, medical-supply inventory, internal content publishing, and post-visit service feedback under a single role-based Vue.js interface backed by Laravel + MySQL.
 
 Primary goals:
 - Run fully without internet access.
