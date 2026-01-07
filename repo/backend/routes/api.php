@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\RentalsController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -20,6 +21,19 @@ Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me'])->middleware('permission:auth.me.read');
         Route::post('/password/change', [AuthController::class, 'changePassword'])
             ->middleware(['cookie.csrf', 'permission:auth.password.change']);
+    });
+});
+
+Route::middleware(['auth.api', 'audit.mutations'])->group(function () {
+    Route::prefix('rentals')->group(function () {
+        Route::get('/assets', [RentalsController::class, 'listAssets'])->middleware('permission:rentals.read');
+        Route::post('/assets', [RentalsController::class, 'createAsset'])->middleware('permission:rentals.write');
+        Route::patch('/assets/{id}', [RentalsController::class, 'updateAsset'])->middleware('permission:rentals.write');
+        Route::post('/checkouts', [RentalsController::class, 'checkout'])->middleware('permission:rentals.checkout');
+        Route::post('/checkouts/{id}/return', [RentalsController::class, 'returnCheckout'])->middleware('permission:rentals.checkout');
+        Route::get('/checkouts/{id}', [RentalsController::class, 'getCheckout'])->middleware('permission:rentals.read');
+        Route::post('/assets/{id}/transfer', [RentalsController::class, 'requestTransfer'])->middleware('permission:rentals.transfer.request');
+        Route::post('/transfers/{id}/approve', [RentalsController::class, 'approveTransfer'])->middleware('permission:rentals.transfer.approve');
     });
 });
 
