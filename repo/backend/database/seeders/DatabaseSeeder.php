@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             RbacSeeder::class,
             FacilityAndWorkstationSeeder::class,
             AuthUsersSeeder::class,
+            DomainBootstrapSeeder::class,
         ]);
     }
 }
