@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\ContentReviewsController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\RentalsController;
+use App\Http\Controllers\Api\ReviewTokenController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -58,7 +60,39 @@ Route::middleware(['auth.api', 'audit.mutations'])->group(function () {
         Route::post('/service-orders/{id}/reserve', [InventoryController::class, 'reserveServiceOrder'])->middleware('permission:inventory.write');
         Route::post('/service-orders/{id}/close', [InventoryController::class, 'closeServiceOrder'])->middleware('permission:inventory.write');
     });
+
+    Route::prefix('content')->group(function () {
+        Route::get('/items', [ContentReviewsController::class, 'listContent'])->middleware('permission:content.read');
+        Route::get('/items/{id}', [ContentReviewsController::class, 'showContent'])->middleware('permission:content.read');
+        Route::post('/items', [ContentReviewsController::class, 'createContent'])->middleware('permission:content.write');
+        Route::patch('/items/{id}', [ContentReviewsController::class, 'updateContent'])->middleware('permission:content.write');
+        Route::post('/items/{id}/submit-approval', [ContentReviewsController::class, 'submitApproval'])->middleware('permission:content.write');
+        Route::post('/items/{id}/approve', [ContentReviewsController::class, 'approve'])->middleware('permission:content.approve');
+        Route::post('/items/{id}/reject', [ContentReviewsController::class, 'reject'])->middleware('permission:content.approve');
+        Route::post('/items/{id}/rollback', [ContentReviewsController::class, 'rollback'])->middleware('permission:content.approve');
+        Route::get('/items/{id}/versions', [ContentReviewsController::class, 'versions'])->middleware('permission:content.read');
+    });
+
+    Route::prefix('reviews')->group(function () {
+        Route::post('/', [ContentReviewsController::class, 'createReview'])->middleware('permission:reviews.write');
+        Route::post('/{id}/responses', [ContentReviewsController::class, 'reviewResponse'])
+            ->whereNumber('id')
+            ->middleware('permission:reviews.respond');
+        Route::post('/{id}/appeal', [ContentReviewsController::class, 'reviewAppeal'])
+            ->whereNumber('id')
+            ->middleware('permission:reviews.moderate');
+        Route::post('/{id}/hide', [ContentReviewsController::class, 'reviewHide'])
+            ->whereNumber('id')
+            ->middleware('permission:reviews.moderate');
+        Route::get('/', [ContentReviewsController::class, 'listReviews'])->middleware('permission:reviews.read');
+    });
+
+    Route::post('/visit-tokens', [ReviewTokenController::class, 'issue'])
+        ->middleware('permission:rentals.checkout');
 });
+
+Route::post('/reviews/public', [ContentReviewsController::class, 'createPublicReview'])->middleware('throttle:60,1');
+Route::get('/content/public', [ContentReviewsController::class, 'publicContent'])->middleware('throttle:120,1');
 
 Route::get('/health', function (Request $request) {
     return response()->json([
