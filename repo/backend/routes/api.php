@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AnalyticsAuditController;
 use App\Http\Controllers\Api\ContentReviewsController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\MasterDataController;
@@ -89,6 +90,20 @@ Route::middleware(['auth.api', 'audit.mutations'])->group(function () {
 
     Route::post('/visit-tokens', [ReviewTokenController::class, 'issue'])
         ->middleware('permission:rentals.checkout');
+
+    Route::prefix('analytics')->group(function () {
+        Route::get('/reviews/summary', [AnalyticsAuditController::class, 'reviewSummary'])->middleware('permission:analytics.read');
+        Route::get('/inventory/low-stock', [AnalyticsAuditController::class, 'lowStock'])->middleware('permission:analytics.read');
+        Route::get('/rentals/overdue', [AnalyticsAuditController::class, 'overdueRentals'])->middleware('permission:analytics.read');
+    });
+
+    Route::prefix('audit')->group(function () {
+        Route::get('/logs', [AnalyticsAuditController::class, 'auditLogs'])->middleware('permission:audit.read');
+        Route::get('/logs/{id}', [AnalyticsAuditController::class, 'auditLogById'])->middleware('permission:audit.read');
+        Route::get('/partitions', [AnalyticsAuditController::class, 'auditPartitions'])->middleware('permission:audit.read');
+        Route::post('/archive', [AnalyticsAuditController::class, 'auditArchive'])->middleware('permission:audit.archive');
+        Route::post('/reindex', [AnalyticsAuditController::class, 'auditReindex'])->middleware('permission:audit.reindex');
+    });
 });
 
 Route::post('/reviews/public', [ContentReviewsController::class, 'createPublicReview'])->middleware('throttle:60,1');
