@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\RentalsController;
 use App\Http\Controllers\AuthController;
@@ -43,6 +44,19 @@ Route::middleware(['auth.api', 'audit.mutations'])->group(function () {
         Route::get('/checkouts/{id}', [RentalsController::class, 'getCheckout'])->middleware('permission:rentals.read');
         Route::post('/assets/{id}/transfer', [RentalsController::class, 'requestTransfer'])->middleware('permission:rentals.transfer.request');
         Route::post('/transfers/{id}/approve', [RentalsController::class, 'approveTransfer'])->middleware('permission:rentals.transfer.approve');
+    });
+
+    Route::prefix('inventory')->group(function () {
+        Route::get('/items', [InventoryController::class, 'items'])->middleware('permission:inventory.read');
+        Route::post('/receipts', [InventoryController::class, 'receipt'])->middleware('permission:inventory.write');
+        Route::post('/issues', [InventoryController::class, 'issue'])->middleware('permission:inventory.write');
+        Route::post('/transfers', [InventoryController::class, 'transfer'])->middleware('permission:inventory.write');
+        Route::post('/stocktakes', [InventoryController::class, 'createStocktake'])->middleware('permission:inventory.stocktake.write');
+        Route::post('/stocktakes/{id}/lines', [InventoryController::class, 'addStocktakeLines'])->middleware('permission:inventory.stocktake.write');
+        Route::post('/stocktakes/{id}/approve-variance', [InventoryController::class, 'approveVariance'])->middleware('permission:inventory.stocktake.approve');
+        Route::put('/reservation-strategy', [InventoryController::class, 'setReservationStrategy'])->middleware('permission:inventory.write');
+        Route::post('/service-orders/{id}/reserve', [InventoryController::class, 'reserveServiceOrder'])->middleware('permission:inventory.write');
+        Route::post('/service-orders/{id}/close', [InventoryController::class, 'closeServiceOrder'])->middleware('permission:inventory.write');
     });
 });
 
