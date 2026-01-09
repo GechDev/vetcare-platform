@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AnalyticsAuditController;
 use App\Http\Controllers\Api\ContentReviewsController;
+use App\Http\Controllers\Api\ImportDedupController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\RentalsController;
@@ -90,6 +91,18 @@ Route::middleware(['auth.api', 'audit.mutations'])->group(function () {
 
     Route::post('/visit-tokens', [ReviewTokenController::class, 'issue'])
         ->middleware('permission:rentals.checkout');
+
+    Route::prefix('imports')->group(function () {
+        Route::post('/{entity}/validate', [ImportDedupController::class, 'validateImport'])->middleware('permission:imports.write');
+        Route::post('/{entity}/commit', [ImportDedupController::class, 'commitImport'])->middleware('permission:imports.write');
+        Route::post('/conflicts/{conflictId}/resolve', [ImportDedupController::class, 'resolveConflict'])->middleware('permission:imports.conflict.resolve');
+        Route::get('/{import_id}', [ImportDedupController::class, 'getImportReport'])->middleware('permission:imports.read');
+        Route::post('/{import_id}/rollback', [ImportDedupController::class, 'rollbackImport'])->middleware('permission:imports.write');
+    });
+
+    Route::get('/exports/{entity}', [ImportDedupController::class, 'exportEntity'])->middleware('permission:exports.read');
+    Route::post('/dedup/scan', [ImportDedupController::class, 'dedupScan'])->middleware('permission:dedup.scan');
+    Route::post('/dedup/merge/{groupId}', [ImportDedupController::class, 'dedupMerge'])->middleware('permission:dedup.merge');
 
     Route::prefix('analytics')->group(function () {
         Route::get('/reviews/summary', [AnalyticsAuditController::class, 'reviewSummary'])->middleware('permission:analytics.read');
