@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import FormValidationSummary from '../components/ui/FormValidationSummary.vue'
 import { toActionableMessage } from '../api/http'
 import { firstAllowedPath } from '../router/menu'
 import { useAuthStore } from '../stores/auth'
@@ -11,21 +12,50 @@ const route = useRoute()
 
 const username = ref('')
 const password = ref('')
-const error = ref('')
+const captchaToken = ref('')
+const errors = ref<string[]>([])
+
+const showSessionExpiredNotice = computed(() => authStore.sessionExpired)
+
+function validateForm(): boolean {
+  const nextErrors: string[] = []
+
+  if (username.value.trim() === '') {
+    nextErrors.push('Username is required.')
+  }
+
+  if (password.value.length < 12) {
+    nextErrors.push('Password must be at least 12 characters.')
+  }
+
+  if (authStore.captchaRequired && captchaToken.value.trim() === '') {
+    nextErrors.push('CAPTCHA token is required after repeated failed logins.')
+  }
+
+  errors.value = nextErrors
+  return nextErrors.length === 0
+}
 
 async function submitLogin() {
-  error.value = ''
+  if (!validateForm()) {
+    return
+  }
 
   try {
-    await authStore.signIn(username.value.trim(), password.value)
+    await authStore.signIn(username.value.trim(), password.value, captchaToken.value.trim() || undefined)
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
-    await router.replace(
-      redirect !== '' && redirect !== '/unauthorized'
-        ? redirect
-        : firstAllowedPath(authStore.user?.roles ?? []),
-    )
-  } catch (exception) {
-    error.value = toActionableMessage(exception)
+    const defaultPath = firstAllowedPath(authStore.user?.roles ?? [])
+
+    if (redirect !== '' && redirect !== '/unauthorized') {
+      await router.push(redirect)
+      if (router.currentRoute.value.path !== '/unauthorized') {
+        return
+      }
+    }
+
+    await router.replace(defaultPath)
+  } catch (error) {
+    errors.value = [toActionableMessage(error)]
   }
 }
 </script>
@@ -36,7 +66,11 @@ async function submitLogin() {
       <h1>VetOps Sign In</h1>
       <p>Use your local LAN account credentials to access role-specific workspaces.</p>
 
-      <p v-if="error" class="danger-text">{{ error }}</p>
+      <p v-if="showSessionExpiredNotice" class="session-expired">
+        Your session expired. Please sign in again to continue.
+      </p>
+
+      <FormValidationSummary :errors="errors" />
 
       <form class="auth-form" @submit.prevent="submitLogin">
         <label>
@@ -47,6 +81,11 @@ async function submitLogin() {
         <label>
           Password
           <input v-model="password" type="password" autocomplete="current-password" />
+        </label>
+
+        <label v-if="authStore.captchaRequired">
+          CAPTCHA Token
+          <input v-model="captchaToken" type="text" placeholder="Enter CAPTCHA token" />
         </label>
 
         <button :disabled="authStore.loading" type="submit">
