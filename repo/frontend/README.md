@@ -1,6 +1,6 @@
-# VetOps Frontend
+# VetCare Frontend
 
-Vue 3 + TypeScript SPA for the VetOps Unified Operations Portal.
+Vue 3 + TypeScript SPA for the VetCare Unified Operations Portal.
 Connects to the Laravel backend via `/api/v1` (proxied by Vite in dev mode
 and by Nginx in production).
 

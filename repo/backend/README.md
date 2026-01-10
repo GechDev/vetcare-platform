@@ -1,6 +1,6 @@
-# VetOps Backend (Laravel API)
+# VetCare Backend (Laravel API)
 
-Laravel backend for the VetOps Unified Operations Portal.
+Laravel backend for the VetCare Unified Operations Portal.
 
 ## Scope
 
@@ -14,7 +14,7 @@ Laravel backend for the VetOps Unified Operations Portal.
 - API routes: `routes/api.php`
 - Console jobs/schedules: `routes/console.php`
 - Middleware bootstrap: `bootstrap/app.php`
-- Domain schema: `database/migrations/2026_03_30_001000_create_vetops_domain_tables.php`
+- Domain schema: `database/migrations/2026_03_30_001000_create_vetcare_domain_tables.php`
 
 ## Local environment
 
@@ -27,12 +27,12 @@ Important env defaults are defined in:
 
 Security-sensitive env keys:
 
-- `VETOPS_AUTH_INACTIVITY_TIMEOUT_MINUTES`
-- `VETOPS_AUTH_LOGIN_MAX_ATTEMPTS`
-- `VETOPS_AUTH_LOGIN_DECAY_SECONDS`
-- `VETOPS_AUTH_CAPTCHA_AFTER_FAILURES`
-- `VETOPS_AUTH_CAPTCHA_TTL_MINUTES`
-- `VETOPS_AUDIT_RETENTION_YEARS`
+- `VETCARE_AUTH_INACTIVITY_TIMEOUT_MINUTES`
+- `VETCARE_AUTH_LOGIN_MAX_ATTEMPTS`
+- `VETCARE_AUTH_LOGIN_DECAY_SECONDS`
+- `VETCARE_AUTH_CAPTCHA_AFTER_FAILURES`
+- `VETCARE_AUTH_CAPTCHA_TTL_MINUTES`
+- `VETCARE_AUDIT_RETENTION_YEARS`
 
 CAPTCHA note: the login flow uses challenge-based CAPTCHA (server-generated math
 challenges bound to workstation + username). There is no shared static bypass
@@ -43,9 +43,9 @@ and is gated on `APP_ENV=testing`.
 
 - Import jobs are row-validated and idempotent by `external_key`.
 - Master/import changes write entity-version snapshots to `master_versions`.
-- Rental overdue transition job: `vetops:rentals:mark-overdue`.
-- Upload integrity job: `vetops:integrity:check-uploads`.
-- Audit partitions archive via scheduler (`vetops:audit:archive`) using retention configuration.
+- Rental overdue transition job: `vetcare:rentals:mark-overdue`.
+- Upload integrity job: `vetcare:integrity:check-uploads`.
+- Audit partitions archive via scheduler (`vetcare:audit:archive`) using retention configuration.
 
 ## Tests
 
