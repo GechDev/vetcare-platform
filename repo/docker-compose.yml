@@ -74,6 +74,59 @@ services:
       retries: 12
       start_period: 120s
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        REGISTRY_PREFIX: ${DOCKER_IMAGE_REGISTRY_PREFIX:-}
+        VITE_API_BASE_PATH: ${VITE_API_BASE_PATH:-/api/v1}
+        VITE_BACKEND_ORIGIN: ${VITE_BACKEND_ORIGIN:-http://backend:8000}
+        VITE_WORKSTATION_ID: ${VITE_WORKSTATION_ID:-ws-terminal-01}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - vetops_edge
+      - vetops_internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Vite hot reload (:5173). Use :8080 `frontend` for production-like Nginx build. Stop this service to save resources: `docker compose stop frontend-dev`
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+      args:
+        REGISTRY_PREFIX: ${DOCKER_IMAGE_REGISTRY_PREFIX:-}
+        VITE_API_BASE_PATH: ${VITE_API_BASE_PATH:-/api/v1}
+        VITE_BACKEND_ORIGIN: ${VITE_BACKEND_ORIGIN:-http://backend:8000}
+    environment:
+      VITE_API_BASE_PATH: ${VITE_API_BASE_PATH:-/api/v1}
+      VITE_BACKEND_ORIGIN: ${VITE_BACKEND_ORIGIN:-http://backend:8000}
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./frontend:/app
+      - vetops_frontend_node_modules:/app/node_modules
+    ports:
+      - "${FRONTEND_DEV_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - vetops_internal
+      - vetops_edge
+
 networks:
   vetops_edge:
     driver: bridge
@@ -85,3 +138,4 @@ volumes:
   vetops_db_data:
   vetops_backend_storage:
   vetops_backend_bootstrap_cache:
+  vetops_frontend_node_modules:
