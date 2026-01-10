@@ -79,6 +79,36 @@ For import and selected POST writes:
 - `Idempotency-Key: <uuid>` supported.
 - If same key + same actor + same endpoint is replayed, return first result.
 
+### 4.5 Data Validation Rules
+Common validation constraints across all entities:
+- **Usernames**: alphanumeric + underscore, 3-50 chars, case-insensitive matching
+- **Passwords**: minimum 12 characters (uppercase, lowercase, digit, symbol required)
+- **Emails**: RFC 5322 format; case-insensitive matching
+- **Phone numbers**: E.164 format with country code (e.g., +1-612-555-0100)
+- **Currency amounts**: positive integer cents; range 0 to 9,999,999,999 (max USD 99,999,999.99)
+- **Dates**: ISO 8601 format (YYYY-MM-DD)
+- **DateTimes**: ISO 8601 with timezone (e.g., 2026-03-15T14:30:00Z or 2026-03-15T14:30:00-05:00)
+- **QR/Barcode**: alphanumeric + symbols; max 255 chars; unique per facility
+- **External keys**: alphanumeric + underscore/dash; max 128 chars; unique per entity type
+- **Text fields**: UTF-8 encoded; max specified length; no null bytes
+
+### 4.6 Response Status Codes
+| Code | Meaning | Example Scenario |
+|------|---------|------------------|
+| 200 | Success | GET, PATCH with valid data |
+| 201 | Created | POST new entity |
+| 204 | No Content | DELETE, logout |
+| 400 | Bad Request | Malformed JSON, missing required fields |
+| 401 | Unauthorized | Invalid token, expired session |
+| 403 | Forbidden | Insufficient permissions, facility scope mismatch |
+| 404 | Not Found | Entity does not exist |
+| 409 | Conflict | Optimistic lock failure (ETag mismatch), duplicate external_key |
+| 410 | Gone | Entity soft-deleted |
+| 422 | Unprocessable Entity | Validation failed (see error details) |
+| 429 | Too Many Requests | Rate limit exceeded (login attempts, API quota) |
+| 500 | Internal Server Error | Unexpected backend error |
+| 503 | Service Unavailable | Database maintenance, temporary outage |
+
 ## 5) Authentication and Session APIs
 
 ### POST `/auth/login`
@@ -141,13 +171,211 @@ Returns who/when/what history and reversible snapshots.
 ### POST `/master/{entity}/{id}/revert`
 Revert to prior version (manager/admin only).
 
-## 7) Rental Asset APIs
+## 8) Inventory and Stock Ledger APIs
 
 ### Data Model (key fields)
-- `asset_code`, `qr_code`, `barcode`
-- `name`, `category`, `photo_url`, `spec_json`
-- `facility_id`, `current_location`
-- `replacement_cost_cents`
+- `sku`, `barcode`, `lot_number`
+- `description`, `unit_of_measure` (each, box, case, pallet)
+- `category`, `subcategory`
+- `facility_id`, `storeroom_id`
+- `current_quantity`, `on_hand`, `available_to_promise` (ATP)
+- `unit_cost_cents`, `reorder_level`, `safety_stock_days`
+- `expiration_date`, `last_received_date`, `last_issued_date`
+
+### Stock Movement Types
+All inventory writes post immutable ledger entries:
+- **inbound**: Receipt from supplier or transfer-in
+- **outbound**: Issue to department or transfer-out
+- **transfer**: Inter-storeroom movement
+- **adjustment**: Stocktake variance or correction
+- **reservation**: Reserved for pending order (reversible)
+
+### GET `/inventory/items`
+List inventory by facility and storeroom. Filters:
+- `facility_id`, `storeroom_id` (required)
+- `category`, `status` (active, low-stock, discontinued)
+- `updated_since`, `expires_before`
+
+### POST `/inventory/receive`
+Create inbound movement. Captures:
+- PO reference, supplier, received_date, received_by
+- Line items: sku, quantity, unit_cost_cents, lot_number, expiration_date
+- Validations: sku exists, facility match, quantity > 0
+
+### POST `/inventory/issue`
+Create outbound movement. Captures:
+- Department/cost center, issued_date, issued_by
+- Line items: sku, quantity (debits ATP)
+- Validations: ATP >= requested quantity, no expired lots
+
+### POST `/inventory/stocktake`
+Create adjustment based on physical count. Captures:
+- Storeroom, counted_date, counted_by, manager_approver_id
+- Line items: sku, expected_qty, actual_qty, variance_reason
+- Validation: variance > 5% requires manager approval and mandatory reason
+- Post-approval: variance entries written to audit and ledger
+
+### GET `/inventory/ledger`
+Query immutable stock ledger. Filters:
+- `facility_id`, `storeroom_id`, `sku`, `date_range`
+- Returns: date, movement_type, quantity, unit_cost, balance_after, posted_by
+
+## 9) Content Publishing and Approval Workflow APIs
+
+### Data Model (key fields)
+- `id`, `type` (announcement, carousel, alert)
+- `title`, `body` (markdown supported)
+- `media_urls` (images, videos)
+- `publish_from_date`, `publish_until_date`
+- `target_audience` (facility_ids[], department_ids[], role_ids[], tag_names[])
+- `status` (draft, pending_approval, approved, published, archived)
+- `created_by`, `approved_by`, `published_by`
+- `version`, `etag` (for optimistic lock)
+
+### Workflow States
+- **Draft**: Content editor creates/edits
+- **Pending Approval**: Editor submits for review
+- **Approved**: Content approver signs off
+- **Published**: Auto-scheduled or manual publication
+- **Archived**: End-of-life, retained for audit
+
+### GET `/content`
+List content filtered by:
+- `status`, `type`, `facility_id`
+- `created_by`, `approved_by`
+- Returns: paginated list with version/etag for each item
+
+### POST `/content`
+Create new content draft.
+- Validations: title required (3-255 chars), body max 10,000 chars
+- Returns: 201 with location header
+
+### PATCH `/content/{id}`
+Update draft or pending content. Must include `If-Match: <etag>`.
+- Only drafts can be edited by creator
+- Editing pending content is forbidden
+
+### POST `/content/{id}/submit`
+Transition draft → pending_approval. Requires content_editor+ role.
+- Validations: required fields populated, media uploaded
+
+### POST `/content/{id}/approve`
+Approve and transition pending → approved. Requires content_approver role.
+- Returns approval metadata: approver_id, approved_at
+
+### POST `/content/{id}/publish`
+Publish approved content (manual). Requires content_approver role.
+- Validations: must be in approved state
+- Updates published_at, published_by
+
+### POST `/content/{id}/revert`
+Revert published content to draft. Audit-logged.
+- Requires system_admin or original_creator + content_approver
+
+### GET `/content/{id}/approvals`
+Return approval history and sign-offs for audit trail.
+
+## 10) Patient Visit Reviews and Feedback APIs
+
+### Data Model (key fields)
+- `visit_id`, `facility_id`, `patient_id_hash` (PII masking)
+- `visit_date`, `provider_id`
+- `service_type`, `rating` (1-5)
+- `review_text`, `follow_up_needed`
+- `reviewed_by`, `reviewed_at`
+- `admin_response`, `admin_response_by`, `response_date`
+- `status` (submitted, manager_review, responded, closed, appeal)
+
+### GET `/reviews`
+Query reviews filtered by facility, date range, rating, status.
+- Clinic managers see facility-scoped reviews
+- System admins see all reviews
+
+### POST `/reviews/{id}/respond`
+Management response to review. Captures:
+- response_text (max 1000 chars)
+- follow_up_actions (optional)
+- Validations: status must be manager_review
+
+### POST `/reviews/{id}/appeal`
+Patient appeal workflow. Requires identity verification.
+- Flags for escalation to clinic manager
+
+### GET `/reviews/dashboard`
+Aggregated metrics: avg rating, review count, response rate, trends by provider.
+
+## 11) Import, Export, and Deduplication APIs
+
+### POST `/import/{entity}`
+Bulk upsert records via CSV or JSON.
+- Required: external_key column for idempotent matching
+- Row-level validation; individual row failures do not abort entire import
+- Returns: import_id, total_rows, success_count, failure_count, warnings
+- Audit logged with file hash and summary
+
+### POST `/import/{import_id}/validate`
+Pre-import validation without committing.
+- Returns preview of changes: created count, updated count, errors
+
+### GET `/import/{import_id}/results`
+Detailed results including per-row error logs.
+
+### POST `/export/{entity}`
+Export filtered records as CSV or JSON.
+- Filters: facility_id, date_range, status, etc.
+- Request: format (csv, json), fields (optional column subset)
+- Response: file download with checksum metadata
+- Audit logged with count and actor
+
+### POST `/dedup/rules`
+Define deduplication matching rules (admin only).
+- Rule format: entity type + field matching criteria
+- Example: match providers by (last_name, first_name, dob_month_year)
+- Returns: potential duplicates for manual review
+
+### POST `/dedup/merge`
+Merge two entities (e.g., duplicate patient records).
+- Captures: primary_id, secondary_id, merge_by_user
+- Post-merge: secondary entity soft-deleted, references updated, versioned
+- Fully audit-logged with reversible snapshots
+
+## 12) Audit and Compliance APIs
+
+### GET `/audits`
+Query immutable audit log.
+- Filters: entity_id, entity_type, action (create, update, delete, export, login, approve), date_range, actor
+- Returns: timestamp, actor (user_id, workstation_id), entity changes (before/after snapshots), reason
+- Pagination: max 500 per request
+- Retention: 7 years per policy
+
+### GET `/audits/export`
+Export audit report in compliance-ready format (CSV, PDF).
+- Filters: entity_type, date_range, specific users
+- Returns: detailed log with all fields, signatures
+
+### GET `/audits/dashboard`
+Audit metrics: recent activity, login trends, export summary, approval counts.
+
+## 13) Health and System APIs
+
+### GET `/health`
+Service health check. Returns `200` with service metadata.
+
+Response:
+```json
+{
+  "service": "vetcare-backend",
+  "status": "healthy",
+  "version": "1.0.0",
+  "database": "connected",
+  "cache": "operational",
+  "timestamp": "2026-03-15T14:30:00Z"
+}
+```
+
+### GET `/config/public`
+Return non-sensitive application configuration (roles, features, constants).
+- Client uses this to initialize UI state and feature flags
 - `status`: `available|rented|maintenance|deactivated|overdue`
 - Pricing: `daily_rate_cents`, `weekly_rate_cents`, `deposit_cents`
 
