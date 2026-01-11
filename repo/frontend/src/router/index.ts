@@ -4,6 +4,8 @@ import { useAuthStore } from '../stores/auth'
 import { firstAllowedPath, type AppRouteMeta } from './menu'
 import LoginView from '../views/LoginView.vue'
 import AppShell from '../views/AppShellView.vue'
+import InventoryClerkView from '../views/workspaces/InventoryClerkView.vue'
+import TechnicianDoctorView from '../views/workspaces/TechnicianDoctorView.vue'
 import UnauthorizedView from '../views/UnauthorizedView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 
@@ -27,6 +29,30 @@ const router = createRouter({
             const authStore = useAuthStore()
             return firstAllowedPath(authStore.user?.roles ?? [])
           },
+        },
+        {
+          path: '/workspace/inventory-clerk',
+          name: 'workspace-inventory-clerk',
+          component: InventoryClerkView,
+          meta: {
+            label: 'Inventory Clerk',
+            requiresAuth: true,
+            permissions: ['inventory.read'],
+            roles: ['inventory_clerk', 'clinic_manager', 'system_admin'],
+            showInMenu: true,
+          } satisfies AppRouteMeta,
+        },
+        {
+          path: '/workspace/technician-doctor',
+          name: 'workspace-technician-doctor',
+          component: TechnicianDoctorView,
+          meta: {
+            label: 'Technician / Doctor',
+            requiresAuth: true,
+            permissions: ['rentals.checkout'],
+            roles: ['technician_doctor', 'clinic_manager', 'system_admin'],
+            showInMenu: true,
+          } satisfies AppRouteMeta,
         },
       ],
     },
