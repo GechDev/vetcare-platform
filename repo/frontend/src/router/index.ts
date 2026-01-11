@@ -4,8 +4,11 @@ import { useAuthStore } from '../stores/auth'
 import { firstAllowedPath, type AppRouteMeta } from './menu'
 import LoginView from '../views/LoginView.vue'
 import AppShell from '../views/AppShellView.vue'
+import SystemAdminView from '../views/workspaces/SystemAdminView.vue'
+import ClinicManagerView from '../views/workspaces/ClinicManagerView.vue'
 import InventoryClerkView from '../views/workspaces/InventoryClerkView.vue'
 import TechnicianDoctorView from '../views/workspaces/TechnicianDoctorView.vue'
+import ContentWorkspaceView from '../views/workspaces/ContentWorkspaceView.vue'
 import UnauthorizedView from '../views/UnauthorizedView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 
@@ -31,6 +34,30 @@ const router = createRouter({
           },
         },
         {
+          path: '/workspace/system-admin',
+          name: 'workspace-system-admin',
+          component: SystemAdminView,
+          meta: {
+            label: 'System Administration',
+            requiresAuth: true,
+            permissions: ['audit.read'],
+            roles: ['system_admin'],
+            showInMenu: true,
+          } satisfies AppRouteMeta,
+        },
+        {
+          path: '/workspace/clinic-manager',
+          name: 'workspace-clinic-manager',
+          component: ClinicManagerView,
+          meta: {
+            label: 'Clinic Manager',
+            requiresAuth: true,
+            permissions: ['analytics.read'],
+            roles: ['clinic_manager', 'system_admin'],
+            showInMenu: true,
+          } satisfies AppRouteMeta,
+        },
+        {
           path: '/workspace/inventory-clerk',
           name: 'workspace-inventory-clerk',
           component: InventoryClerkView,
@@ -51,6 +78,18 @@ const router = createRouter({
             requiresAuth: true,
             permissions: ['rentals.checkout'],
             roles: ['technician_doctor', 'clinic_manager', 'system_admin'],
+            showInMenu: true,
+          } satisfies AppRouteMeta,
+        },
+        {
+          path: '/workspace/content',
+          name: 'workspace-content',
+          component: ContentWorkspaceView,
+          meta: {
+            label: 'Content Workspace',
+            requiresAuth: true,
+            permissions: ['content.read'],
+            roles: ['content_editor', 'content_approver', 'system_admin'],
             showInMenu: true,
           } satisfies AppRouteMeta,
         },
