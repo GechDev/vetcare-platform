@@ -11,6 +11,8 @@ import TechnicianDoctorView from '../views/workspaces/TechnicianDoctorView.vue'
 import ContentWorkspaceView from '../views/workspaces/ContentWorkspaceView.vue'
 import UnauthorizedView from '../views/UnauthorizedView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
+import ReviewSubmitView from '../views/ReviewSubmitView.vue'
+import StaffTerminalView from '../views/StaffTerminalView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -100,6 +102,18 @@ const router = createRouter({
       name: 'unauthorized',
       component: UnauthorizedView,
       meta: { label: 'Unauthorized' } satisfies AppRouteMeta,
+    },
+    {
+      path: '/review-submit/:visitOrderId',
+      name: 'review-submit',
+      component: ReviewSubmitView,
+      meta: { label: 'Submit Review' } satisfies AppRouteMeta,
+    },
+    {
+      path: '/staff-terminal',
+      name: 'staff-terminal',
+      component: StaffTerminalView,
+      meta: { label: 'Staff Terminal' } satisfies AppRouteMeta,
     },
     {
       path: '/:pathMatch(.*)*',
