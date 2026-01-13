@@ -89,8 +89,11 @@ Route::middleware(['auth.api', 'audit.mutations'])->group(function () {
         Route::get('/', [ContentReviewsController::class, 'listReviews'])->middleware('permission:reviews.read');
     });
 
-    Route::post('/visit-tokens', [ReviewTokenController::class, 'issue'])
-        ->middleware('permission:rentals.checkout');
+    Route::prefix('analytics')->group(function () {
+        Route::get('/reviews/summary', [AnalyticsAuditController::class, 'reviewSummary'])->middleware('permission:analytics.read');
+        Route::get('/inventory/low-stock', [AnalyticsAuditController::class, 'lowStock'])->middleware('permission:analytics.read');
+        Route::get('/rentals/overdue', [AnalyticsAuditController::class, 'overdueRentals'])->middleware('permission:analytics.read');
+    });
 
     Route::prefix('imports')->group(function () {
         Route::post('/{entity}/validate', [ImportDedupController::class, 'validateImport'])->middleware('permission:imports.write');
@@ -100,15 +103,12 @@ Route::middleware(['auth.api', 'audit.mutations'])->group(function () {
         Route::post('/{import_id}/rollback', [ImportDedupController::class, 'rollbackImport'])->middleware('permission:imports.write');
     });
 
+    Route::post('/visit-tokens', [ReviewTokenController::class, 'issue'])
+        ->middleware('permission:rentals.checkout');
+
     Route::get('/exports/{entity}', [ImportDedupController::class, 'exportEntity'])->middleware('permission:exports.read');
     Route::post('/dedup/scan', [ImportDedupController::class, 'dedupScan'])->middleware('permission:dedup.scan');
     Route::post('/dedup/merge/{groupId}', [ImportDedupController::class, 'dedupMerge'])->middleware('permission:dedup.merge');
-
-    Route::prefix('analytics')->group(function () {
-        Route::get('/reviews/summary', [AnalyticsAuditController::class, 'reviewSummary'])->middleware('permission:analytics.read');
-        Route::get('/inventory/low-stock', [AnalyticsAuditController::class, 'lowStock'])->middleware('permission:analytics.read');
-        Route::get('/rentals/overdue', [AnalyticsAuditController::class, 'overdueRentals'])->middleware('permission:analytics.read');
-    });
 
     Route::prefix('audit')->group(function () {
         Route::get('/logs', [AnalyticsAuditController::class, 'auditLogs'])->middleware('permission:audit.read');
@@ -129,8 +129,8 @@ Route::get('/health', function (Request $request) {
             'status' => 'ok',
             'timestamp_utc' => now()->utc()->toISOString(),
             'currency' => [
-                'code' => config('vetops.currency.code', 'USD'),
-                'amount_format' => config('vetops.currency.amount_format', 'integer_cents'),
+                'code' => config('vetops.currency.code'),
+                'amount_format' => config('vetops.currency.amount_format'),
             ],
         ],
         'request_id' => $request->header('X-Request-Id') ?: (string) Str::uuid(),
