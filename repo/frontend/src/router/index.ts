@@ -2,17 +2,16 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { firstAllowedPath, type AppRouteMeta } from './menu'
-import LoginView from '../views/LoginView.vue'
-import AppShell from '../views/AppShellView.vue'
-import SystemAdminView from '../views/workspaces/SystemAdminView.vue'
-import ClinicManagerView from '../views/workspaces/ClinicManagerView.vue'
-import InventoryClerkView from '../views/workspaces/InventoryClerkView.vue'
-import TechnicianDoctorView from '../views/workspaces/TechnicianDoctorView.vue'
-import ContentWorkspaceView from '../views/workspaces/ContentWorkspaceView.vue'
-import UnauthorizedView from '../views/UnauthorizedView.vue'
-import NotFoundView from '../views/NotFoundView.vue'
-import ReviewSubmitView from '../views/ReviewSubmitView.vue'
-import StaffTerminalView from '../views/StaffTerminalView.vue'
+
+const LoginView = () => import('../views/LoginView.vue')
+const AppShell = () => import('../views/AppShellView.vue')
+const SystemAdminView = () => import('../views/workspaces/SystemAdminView.vue')
+const ClinicManagerView = () => import('../views/workspaces/ClinicManagerView.vue')
+const InventoryClerkView = () => import('../views/workspaces/InventoryClerkView.vue')
+const TechnicianDoctorView = () => import('../views/workspaces/TechnicianDoctorView.vue')
+const ContentWorkspaceView = () => import('../views/workspaces/ContentWorkspaceView.vue')
+const UnauthorizedView = () => import('../views/UnauthorizedView.vue')
+const NotFoundView = () => import('../views/NotFoundView.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -106,13 +105,13 @@ const router = createRouter({
     {
       path: '/review-submit/:visitOrderId',
       name: 'review-submit',
-      component: ReviewSubmitView,
+      component: () => import('../views/ReviewSubmitView.vue'),
       meta: { label: 'Submit Review' } satisfies AppRouteMeta,
     },
     {
       path: '/staff-terminal',
       name: 'staff-terminal',
-      component: StaffTerminalView,
+      component: () => import('../views/StaffTerminalView.vue'),
       meta: { label: 'Staff Terminal' } satisfies AppRouteMeta,
     },
     {
